@@ -1,5 +1,7 @@
 # Personal Blog
 
+🔗 **在线地址**：https://blog-production-6776.up.railway.app
+
 一个简洁的个人博客系统，基于 Node.js + Express 构建，支持 Markdown 文章撰写、用户注册登录、评论互动。
 
 ## 技术栈
@@ -8,7 +10,7 @@
 |------|------|
 | 后端 | Node.js + Express 5 |
 | 模板引擎 | Handlebars |
-| 数据库 | SQLite（sql.js） |
+| 数据库 | PostgreSQL（Railway） |
 | 认证 | bcryptjs + express-session |
 | Markdown | marked + highlight.js |
 | 演示文稿 | pptxgenjs（内置功能） |
@@ -16,7 +18,7 @@
 ## 功能
 
 - ✅ 文章管理（Markdown 撰写 / 编辑 / 删除）
-- ✅ 用户系统（注册 / 登录 / 权限管理）
+- ✅ 用户系统（注册 / 登录 / 权限管理 / 修改密码）
 - ✅ 评论系统
 - ✅ 搜索功能
 - ✅ 标签与分类
@@ -30,6 +32,7 @@
 ### 本地运行
 
 ```bash
+# 需要先安装 PostgreSQL，并配置 DATABASE_URL 环境变量
 npm install
 npm run dev    # 开发模式（热重载）
 npm start      # 生产模式
@@ -37,14 +40,19 @@ npm start      # 生产模式
 
 访问 http://localhost:3000
 
+**本地 PostgreSQL 配置**：
+```bash
+export DATABASE_URL="postgresql://用户名:密码@localhost:5432/数据库名"
+```
+
 ### 初始化
 
-首次运行会自动创建 SQLite 数据库和管理员账户：
+首次运行会自动创建数据库表和管理员账户：
 
 - **管理员账号**：`admin` / `admin123`
 - **普通账号**：注册后自动创建
 
-> 建议首次登录后立即修改管理员密码。
+> 首次登录后请前往「设置」修改管理员密码。
 
 ## 目录结构
 
@@ -52,13 +60,12 @@ npm start      # 生产模式
 blog/
 ├── src/
 │   ├── app.js           # 主入口
-│   ├── database.js      # 数据库操作
+│   ├── database.js      # 数据库操作（PostgreSQL）
 │   ├── middleware/      # 中间件（认证、权限）
 │   ├── routes/         # 路由（auth/posts/comments/admin）
 │   └── utils/          # 工具函数（Markdown 渲染等）
 ├── views/              # Handlebars 模板
 ├── public/             # 静态资源（CSS/JS/图片上传）
-├── database.sqlite     # 数据库文件（自动生成）
 └── package.json
 ```
 
@@ -67,15 +74,11 @@ blog/
 ### Railway（推荐）
 
 1. 注册 [Railway](https://railway.app)（GitHub 登录，无需电话验证）
-2. 创建 Project → 从 GitHub 导入 `amainoyo/blog`
-3. Railway 自动检测 Node.js，直接部署
-4. 获取公开域名，完事
+2. 创建 Project → **Provision PostgreSQL**（自动创建数据库）
+3. 再创建 Project → **Deploy from GitHub** → 选择 `amainoyo/blog`
+4. Railway 会自动从 GitHub 部署，无需手动配置
 
-**环境变量**（可选）：
-```
-PORT=3000
-NODE_ENV=production
-```
+> PostgreSQL 的 `DATABASE_URL` 会由 Railway 自动注入。
 
 ### 其他平台
 
@@ -97,6 +100,8 @@ NODE_ENV=production
 | GET | `/register` | 注册页 |
 | POST | `/register` | 注册 |
 | POST | `/logout` | 登出 |
+| GET | `/settings` | 修改密码 |
+| POST | `/settings/password` | 提交新密码 |
 | GET | `/admin` | 管理后台 |
 | POST | `/admin/new` | 创建文章 |
 | POST | `/admin/ppt` | 生成 PPT |

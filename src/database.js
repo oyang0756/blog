@@ -1,348 +1,286 @@
-const initSqlJs = require('sql.js');
-const path = require('path');
-const fs = require('fs');
+const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const { renderMarkdown } = require('./utils/markdown');
 
-const DB_PATH = path.join(__dirname, '..', 'database.sqlite');
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+});
 
 let db;
 
 async function initDb() {
-    const SQL = await initSqlJs();
+    db = await pool.connect();
 
-    if (fs.existsSync(DB_PATH)) {
-        const buffer = fs.readFileSync(DB_PATH);
-        db = new SQL.Database(buffer);
-    } else {
-        db = new SQL.Database();
-    }
-
-    db.run(`
+    await pool.query(`
         CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             username TEXT UNIQUE NOT NULL,
             email TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
             role TEXT DEFAULT 'user',
             avatar TEXT,
             bio TEXT,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        );
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
 
+    await pool.query(`
         CREATE TABLE IF NOT EXISTS posts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             title TEXT NOT NULL,
             slug TEXT UNIQUE NOT NULL,
             content TEXT NOT NULL,
             excerpt TEXT,
-            author_id INTEGER NOT NULL,
+            author_id INTEGER NOT NULL REFERENCES users(id),
             status TEXT DEFAULT 'published',
             view_count INTEGER DEFAULT 0,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (author_id) REFERENCES users(id)
-        );
-
-        CREATE TABLE IF NOT EXISTS comments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            post_id INTEGER NOT NULL,
-            author_id INTEGER NOT NULL,
-            parent_id INTEGER,
-            content TEXT NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
-            FOREIGN KEY (author_id) REFERENCES users(id),
-            FOREIGN KEY (parent_id) REFERENCES comments(id) ON DELETE CASCADE
-        );
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
     `);
 
-    // Migration: Add updated_at column to comments if it doesn't exist
-    try {
-        const columnsResult = db.exec("PRAGMA table_info(comments)");
-        const columns = columnsResult[0].values.map(row => row[1]);
-        if (!columns.includes('updated_at')) {
-            db.run('ALTER TABLE comments ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP');
-            saveDb();
-        }
-    } catch (e) {
-        // Column might already exist, ignore error
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS comments (
+            id SERIAL PRIMARY KEY,
+            post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+            author_id INTEGER NOT NULL REFERENCES users(id),
+            parent_id INTEGER REFERENCES comments(id) ON DELETE CASCADE,
+            content TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+
+    // Create admin if not exists
+    const adminExists = await pool.query("SELECT id FROM users WHERE username = 'admin'");
+    if (adminExists.rows.length === 0) {
+        const hash = bcrypt.hashSync('admin123', 10);
+        await pool.query(
+            "INSERT INTO users (username, email, password_hash, role) VALUES ($1, $2, $3, $4)",
+            ['admin', 'admin@blog.local', hash, 'admin']
+        );
     }
 
-    saveDb();
-    return db;
-}
-
-function saveDb() {
-    if (db) {
-        const data = db.export();
-        const buffer = Buffer.from(data);
-        fs.writeFileSync(DB_PATH, buffer);
-    }
+    return pool;
 }
 
 const User = {
-    create(username, email, password) {
+    async create(username, email, password) {
         const password_hash = bcrypt.hashSync(password, 10);
-        db.run('INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)', [username, email, password_hash]);
-        const result = db.exec('SELECT last_insert_rowid() as id');
-        const id = result[0].values[0][0];
-        saveDb();
-        return this.findById(id);
+        const result = await pool.query(
+            'INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3) RETURNING *',
+            [username, email, password_hash]
+        );
+        return result.rows[0];
     },
 
-    findById(id) {
-        const result = db.exec('SELECT * FROM users WHERE id = ?', [id]);
-        if (result.length === 0 || result[0].values.length === 0) return null;
-        const row = result[0].values[0];
-        const cols = result[0].columns;
-        return Object.fromEntries(cols.map((c, i) => [c, row[i]]));
+    async findById(id) {
+        const result = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
+        return result.rows[0] || null;
     },
 
-    findByUsername(username) {
-        const result = db.exec('SELECT * FROM users WHERE username = ?', [username]);
-        if (result.length === 0 || result[0].values.length === 0) return null;
-        const row = result[0].values[0];
-        const cols = result[0].columns;
-        return Object.fromEntries(cols.map((c, i) => [c, row[i]]));
+    async findByUsername(username) {
+        const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+        return result.rows[0] || null;
     },
 
-    findByEmail(email) {
-        const result = db.exec('SELECT * FROM users WHERE email = ?', [email]);
-        if (result.length === 0 || result[0].values.length === 0) return null;
-        const row = result[0].values[0];
-        const cols = result[0].columns;
-        return Object.fromEntries(cols.map((c, i) => [c, row[i]]));
+    async findByEmail(email) {
+        const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+        return result.rows[0] || null;
     },
 
     verifyPassword(password, hash) {
         return bcrypt.compareSync(password, hash);
     },
 
-    findAll() {
-        const result = db.exec('SELECT * FROM users ORDER BY created_at DESC');
-        if (result.length === 0) return [];
-        const cols = result[0].columns;
-        return result[0].values.map(row => Object.fromEntries(cols.map((c, i) => [c, row[i]])));
+    async findAll() {
+        const result = await pool.query('SELECT * FROM users ORDER BY created_at DESC');
+        return result.rows;
     },
 
-    count() {
-        const result = db.exec('SELECT COUNT(*) as count FROM users');
-        return result[0].values[0][0];
+    async count() {
+        const result = await pool.query('SELECT COUNT(*) as count FROM users');
+        return parseInt(result.rows[0].count);
     },
 
-    updateRole(id, role) {
-        db.run('UPDATE users SET role = ? WHERE id = ?', [role, id]);
-        saveDb();
+    async updateRole(id, role) {
+        await pool.query('UPDATE users SET role = $1 WHERE id = $2', [role, id]);
     },
 
-    delete(id) {
-        // 先删除用户的文章和评论
-        db.run('DELETE FROM comments WHERE author_id = ?', [id]);
-        db.run('DELETE FROM posts WHERE author_id = ?', [id]);
-        db.run('DELETE FROM users WHERE id = ?', [id]);
-        saveDb();
+    async delete(id) {
+        await pool.query('DELETE FROM users WHERE id = $1', [id]);
     }
 };
 
 const Post = {
-    create(title, slug, content, authorId, status = 'published') {
+    async create(title, slug, content, authorId, status = 'published') {
         const excerpt = content.replace(/<[^>]+>/g, '').slice(0, 200).replace(/[#*`>\-\[\]]/g, '') + '...';
-        db.run('INSERT INTO posts (title, slug, content, excerpt, author_id, status) VALUES (?, ?, ?, ?, ?, ?)',
-            [title, slug, content, excerpt, authorId, status]);
-        const result = db.exec('SELECT last_insert_rowid() as id');
-        const id = result[0].values[0][0];
-        saveDb();
-        return this.findById(id);
+        const result = await pool.query(
+            'INSERT INTO posts (title, slug, content, excerpt, author_id, status) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+            [title, slug, content, excerpt, authorId, status]
+        );
+        return this.findById(result.rows[0].id);
     },
 
-    findById(id) {
-        const result = db.exec(`
+    async findById(id) {
+        const result = await pool.query(`
             SELECT posts.*, users.username as author_username
             FROM posts
             JOIN users ON posts.author_id = users.id
-            WHERE posts.id = ?
+            WHERE posts.id = $1
         `, [id]);
-        if (result.length === 0 || result[0].values.length === 0) return null;
-        const row = result[0].values[0];
-        const cols = result[0].columns;
-        const post = Object.fromEntries(cols.map((c, i) => [c, row[i]]));
+        if (result.rows.length === 0) return null;
+        const post = result.rows[0];
         post.html = renderMarkdown(post.content);
         return post;
     },
 
-    findBySlug(slug) {
-        const result = db.exec(`
+    async findBySlug(slug) {
+        const result = await pool.query(`
             SELECT posts.*, users.username as author_username
             FROM posts
             JOIN users ON posts.author_id = users.id
-            WHERE posts.slug = ?
+            WHERE posts.slug = $1
         `, [slug]);
-        if (result.length === 0 || result[0].values.length === 0) return null;
-        const row = result[0].values[0];
-        const cols = result[0].columns;
-        const post = Object.fromEntries(cols.map((c, i) => [c, row[i]]));
+        if (result.rows.length === 0) return null;
+        const post = result.rows[0];
         post.html = renderMarkdown(post.content);
         return post;
     },
 
-    findAll(limit = 20, offset = 0) {
-        const result = db.exec(`
+    async findAll(limit = 20, offset = 0) {
+        const result = await pool.query(`
             SELECT posts.*, users.username as author_username
             FROM posts
             JOIN users ON posts.author_id = users.id
             WHERE status = 'published'
             ORDER BY created_at DESC
-            LIMIT ? OFFSET ?
+            LIMIT $1 OFFSET $2
         `, [limit, offset]);
-        if (result.length === 0) return [];
-        const cols = result[0].columns;
-        return result[0].values.map(row => {
-            const post = Object.fromEntries(cols.map((c, i) => [c, row[i]]));
+        return result.rows.map(post => {
             post.html = renderMarkdown(post.content);
             return post;
         });
     },
 
-    findByAuthor(authorId) {
-        const result = db.exec(`
+    async findByAuthor(authorId) {
+        const result = await pool.query(`
             SELECT posts.*, users.username as author_username
             FROM posts
             JOIN users ON posts.author_id = users.id
-            WHERE author_id = ?
+            WHERE author_id = $1
             ORDER BY created_at DESC
         `, [authorId]);
-        if (result.length === 0) return [];
-        const cols = result[0].columns;
-        return result[0].values.map(row => {
-            const post = Object.fromEntries(cols.map((c, i) => [c, row[i]]));
+        return result.rows.map(post => {
             post.html = renderMarkdown(post.content);
             return post;
         });
     },
 
-    update(id, title, slug, content, status) {
+    async update(id, title, slug, content, status) {
         const excerpt = content.replace(/<[^>]+>/g, '').slice(0, 200).replace(/[#*`>\-\[\]]/g, '') + '...';
-        db.run(`
+        await pool.query(`
             UPDATE posts
-            SET title = ?, slug = ?, content = ?, excerpt = ?, status = ?, updated_at = datetime('now')
-            WHERE id = ?
+            SET title = $1, slug = $2, content = $3, excerpt = $4, status = $5, updated_at = CURRENT_TIMESTAMP
+            WHERE id = $6
         `, [title, slug, content, excerpt, status, id]);
-        saveDb();
         return this.findById(id);
     },
 
-    delete(id) {
-        db.run('DELETE FROM posts WHERE id = ?', [id]);
-        saveDb();
+    async delete(id) {
+        await pool.query('DELETE FROM posts WHERE id = $1', [id]);
     },
 
-    incrementViewCount(id) {
-        db.run('UPDATE posts SET view_count = view_count + 1 WHERE id = ?', [id]);
-        saveDb();
+    async incrementViewCount(id) {
+        await pool.query('UPDATE posts SET view_count = view_count + 1 WHERE id = $1', [id]);
     },
 
-    count() {
-        const result = db.exec("SELECT COUNT(*) as count FROM posts WHERE status = 'published'");
-        return result[0].values[0][0];
+    async count() {
+        const result = await pool.query("SELECT COUNT(*) as count FROM posts WHERE status = 'published'");
+        return parseInt(result.rows[0].count);
     },
 
-    search(query, limit = 20, offset = 0) {
-        const result = db.exec(`
+    async search(query, limit = 20, offset = 0) {
+        const result = await pool.query(`
             SELECT posts.*, users.username as author_username
             FROM posts
             JOIN users ON posts.author_id = users.id
             WHERE status = 'published'
-            AND (title LIKE ? OR content LIKE ?)
+            AND (title LIKE $1 OR content LIKE $1)
             ORDER BY created_at DESC
-            LIMIT ? OFFSET ?
-        `, [`%${query}%`, `%${query}%`, limit, offset]);
-        if (result.length === 0) return [];
-        const cols = result[0].columns;
-        return result[0].values.map(row => {
-            const post = Object.fromEntries(cols.map((c, i) => [c, row[i]]));
+            LIMIT $2 OFFSET $3
+        `, [`%${query}%`, limit, offset]);
+        return result.rows.map(post => {
             post.html = renderMarkdown(post.content);
             return post;
         });
     },
 
-    findAllAdmin() {
-        const result = db.exec(`
+    async findAllAdmin() {
+        const result = await pool.query(`
             SELECT posts.*, users.username as author_username
             FROM posts
             JOIN users ON posts.author_id = users.id
             ORDER BY created_at DESC
         `);
-        if (result.length === 0) return [];
-        const cols = result[0].columns;
-        return result[0].values.map(row => Object.fromEntries(cols.map((c, i) => [c, row[i]])));
+        return result.rows;
     }
 };
 
 const Comment = {
-    create(postId, authorId, content, parentId = null) {
-        db.run('INSERT INTO comments (post_id, author_id, content, parent_id) VALUES (?, ?, ?, ?)',
-            [postId, authorId, content, parentId]);
-        const result = db.exec('SELECT last_insert_rowid() as id');
-        const id = result[0].values[0][0];
-        saveDb();
-        return this.findById(id);
+    async create(postId, authorId, content, parentId = null) {
+        const result = await pool.query(
+            'INSERT INTO comments (post_id, author_id, content, parent_id) VALUES ($1, $2, $3, $4) RETURNING *',
+            [postId, authorId, content, parentId]
+        );
+        return this.findById(result.rows[0].id);
     },
 
-    findById(id) {
-        const result = db.exec(`
+    async findById(id) {
+        const result = await pool.query(`
             SELECT comments.*, users.username as author_username
             FROM comments
             JOIN users ON comments.author_id = users.id
-            WHERE comments.id = ?
+            WHERE comments.id = $1
         `, [id]);
-        if (result.length === 0 || result[0].values.length === 0) return null;
-        const row = result[0].values[0];
-        const cols = result[0].columns;
-        return Object.fromEntries(cols.map((c, i) => [c, row[i]]));
+        return result.rows[0] || null;
     },
 
-    findByPost(postId) {
-        const result = db.exec(`
+    async findByPost(postId) {
+        const result = await pool.query(`
             SELECT comments.*, users.username as author_username
             FROM comments
             JOIN users ON comments.author_id = users.id
-            WHERE post_id = ?
+            WHERE post_id = $1
             ORDER BY created_at ASC
         `, [postId]);
-        if (result.length === 0) return [];
-        const cols = result[0].columns;
-        return result[0].values.map(row => Object.fromEntries(cols.map((c, i) => [c, row[i]])));
+        return result.rows;
     },
 
-    delete(id) {
-        db.run('DELETE FROM comments WHERE id = ?', [id]);
-        saveDb();
+    async delete(id) {
+        await pool.query('DELETE FROM comments WHERE id = $1', [id]);
     },
 
-    update(id, content) {
-        db.run('UPDATE comments SET content = ?, updated_at = ? WHERE id = ?', [content, new Date().toISOString(), id]);
-        saveDb();
+    async update(id, content) {
+        await pool.query('UPDATE comments SET content = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [content, id]);
     },
 
-    findAll() {
-        const result = db.exec(`
+    async findAll() {
+        const result = await pool.query(`
             SELECT comments.*, users.username as author_username, posts.title as post_title, posts.slug as post_slug
             FROM comments
             JOIN users ON comments.author_id = users.id
             JOIN posts ON comments.post_id = posts.id
             ORDER BY comments.created_at DESC
         `);
-        if (result.length === 0) return [];
-        const cols = result[0].columns;
-        return result[0].values.map(row => Object.fromEntries(cols.map((c, i) => [c, row[i]])));
+        return result.rows;
     },
 
-    countAll() {
-        const result = db.exec('SELECT COUNT(*) as count FROM comments');
-        return result[0].values[0][0];
+    async countAll() {
+        const result = await pool.query('SELECT COUNT(*) as count FROM comments');
+        return parseInt(result.rows[0].count);
     }
 };
 
@@ -356,11 +294,9 @@ function generateSlug(title) {
 }
 
 function formatDate(dateStr) {
+    if (!dateStr) return '';
     const date = new Date(dateStr);
-    // 时间戳已包含时区信息，但需要确保显示北京时间
-    // 加上8小时偏移量（数据库存储的是UTC时间）
-    const beijingTime = new Date(date.getTime() + 8 * 60 * 60 * 1000);
-    return `${beijingTime.getFullYear()}-${String(beijingTime.getMonth() + 1).padStart(2, '0')}-${String(beijingTime.getDate()).padStart(2, '0')} ${String(beijingTime.getHours()).padStart(2, '0')}:${String(beijingTime.getMinutes()).padStart(2, '0')}`;
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
-module.exports = { initDb, User, Post, Comment, generateSlug, formatDate, getDb: () => db, saveDb };
+module.exports = { initDb, User, Post, Comment, generateSlug, formatDate, pool };

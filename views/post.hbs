@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{post.title}} - 博客</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    {{> header}}
+
+    <main class="main-content">
+        <article class="post-detail">
+            <header class="post-header">
+                <h1>{{post.title}}</h1>
+                <div class="post-meta">
+                    <span>By {{post.author_username}}</span>
+                    <span>{{formatDate post.created_at}}</span>
+                    <span>{{post.view_count}} 阅读</span>
+                </div>
+                <div class="post-actions">
+                    {{#if (or (eq post.author_id user.id) (eq user.role "admin"))}}
+                    <a href="/editor/{{post.id}}" class="btn">编辑</a>
+                    <form action="/posts/{{post.id}}/delete" method="POST" class="delete-form" onsubmit="return confirm('确定删除这篇博文吗？')">
+                        <button type="submit" class="btn btn-danger">删除</button>
+                    </form>
+                    {{/if}}
+                </div>
+            </header>
+            <div class="post-content">{{{post.html}}}</div>
+        </article>
+
+        <section class="comments-section">
+            <h2>评论 ({{comments.length}})</h2>
+            {{#if user}}
+            <form method="POST" action="/posts/{{post.id}}/comments" class="comment-form">
+                <input type="hidden" name="slug" value="{{post.slug}}">
+                <textarea name="content" placeholder="写下你的评论..." required></textarea>
+                <button type="submit" class="btn btn-primary">提交评论</button>
+            </form>
+            {{else}}
+            <p class="login-prompt"><a href="/login">登录</a>后可发表评论</p>
+            {{/if}}
+
+            <div class="comment-list">
+                {{#each comments}}
+                <div class="comment" id="comment-{{id}}">
+                    <div class="comment-header">
+                        <span class="comment-author">{{author_username}}</span>
+                        <span class="comment-date">{{formatDate created_at}}</span>
+                        {{#if (or (eq author_id ../user.id) (eq ../user.role "admin"))}}
+                        <div class="comment-actions">
+                            <button type="button" class="btn-link" onclick="showEditForm('{{id}}')">编辑</button>
+                            <form action="/comments/{{id}}/delete" method="POST" class="comment-delete-form" onsubmit="return confirm('确定删除这条评论吗？')">
+                                <button type="submit" class="btn-link">删除</button>
+                            </form>
+                        </div>
+                        {{/if}}
+                    </div>
+                    <div class="comment-content" id="comment-content-{{id}}">{{content}}</div>
+                    <form action="/comments/{{id}}/update" method="POST" class="comment-edit-form" id="edit-form-{{id}}" style="display:none;">
+                        <textarea name="content" class="edit-textarea">{{content}}</textarea>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">保存</button>
+                            <button type="button" class="btn" onclick="hideEditForm('{{id}}')">取消</button>
+                        </div>
+                    </form>
+                </div>
+                {{/each}}
+            </div>
+        </section>
+    </main>
+
+    {{> footer}}
+    <script>
+    function showEditForm(commentId) {
+        document.getElementById('comment-content-' + commentId).style.display = 'none';
+        document.getElementById('edit-form-' + commentId).style.display = 'block';
+    }
+    function hideEditForm(commentId) {
+        document.getElementById('comment-content-' + commentId).style.display = 'block';
+        document.getElementById('edit-form-' + commentId).style.display = 'none';
+    }
+    </script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文章管理 - 博客</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    {{> header}}
+
+    <main class="main-content">
+        <div class="admin-page">
+            <h1>文章管理</h1>
+            <a href="/admin" class="btn">返回后台</a>
+
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>标题</th>
+                        <th>作者</th>
+                        <th>状态</th>
+                        <th>阅读</th>
+                        <th>发布时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each posts}}
+                    <tr>
+                        <td>{{id}}</td>
+                        <td><a href="/post/{{slug}}">{{title}}</a></td>
+                        <td>{{author_username}}</td>
+                        <td>{{status}}</td>
+                        <td>{{view_count}}</td>
+                        <td>{{formatDate created_at}}</td>
+                        <td>
+                            <form method="POST" action="/admin/posts/{{id}}/delete" class="delete-form" onsubmit="return confirm('确定删除该文章？')">
+                                <button type="submit" class="btn btn-danger">删除</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    {{> footer}}
+</body>
+</html>

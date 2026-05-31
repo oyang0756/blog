@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理后台 - 博客</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    {{> header}}
+
+    <main class="main-content">
+        <div class="admin-page">
+            <h1>管理后台</h1>
+            
+            <div class="admin-stats">
+                <div class="stat-card">
+                    <h3>{{userCount}}</h3>
+                    <p>用户数</p>
+                    <a href="/admin/users" class="btn">管理用户</a>
+                </div>
+                <div class="stat-card">
+                    <h3>{{postCount}}</h3>
+                    <p>文章数</p>
+                    <a href="/admin/posts" class="btn">管理文章</a>
+                </div>
+                <div class="stat-card">
+                    <h3>{{commentCount}}</h3>
+                    <p>评论数</p>
+                    <a href="/admin/comments" class="btn">管理评论</a>
+                </div>
+            </div>
+
+            <div class="admin-nav">
+                <a href="/admin/users" class="admin-nav-btn">用户管理</a>
+                <a href="/admin/posts" class="admin-nav-btn">文章管理</a>
+                <a href="/admin/comments" class="admin-nav-btn">评论管理</a>
+            </div>
+        </div>
+    </main>
+
+    {{> footer}}
+</body>
+</html>

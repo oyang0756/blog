@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 博客</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    {{> header}}
+
+    <main class="main-content">
+        <div class="auth-page">
+            <div class="auth-card">
+                <h1>欢迎回来</h1>
+                <p class="subtitle">登录到你的账户</p>
+
+                {{#if error}}
+                <div class="alert alert-error">{{error}}</div>
+                {{/if}}
+
+                <form method="POST" action="/login">
+                    <div class="form-group">
+                        <label for="username">用户名</label>
+                        <input type="text" id="username" name="username" required placeholder="输入用户名">
+                    </div>
+                    <div class="form-group">
+                        <label for="password">密码</label>
+                        <input type="password" id="password" name="password" required placeholder="输入密码">
+                    </div>
+                    <button type="submit" class="btn btn-primary">登录</button>
+                </form>
+
+                <p class="auth-footer">
+                    还没有账号？<a href="/register">立即注册</a>
+                </p>
+            </div>
+        </div>
+    </main>
+
+    {{> footer}}
+</body>
+</html>

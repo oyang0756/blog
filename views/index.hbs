@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>博客 - 首页</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    {{> header}}
+
+    <main class="main-content">
+        <section class="hero">
+            <h1>欢迎来到博客</h1>
+            <p>分享你的想法，记录你的生活</p>
+        </section>
+
+        <section class="posts-section">
+            <h2 class="section-title">最新文章 <span class="post-count">(共 {{total}} 篇)</span></h2>
+            {{#if posts.length}}
+                <div class="posts-grid">
+                    {{#each posts}}
+                    <article class="post-card">
+                        <a href="/post/{{slug}}" class="post-link">
+                            <h3 class="post-title">{{title}}</h3>
+                            <p class="post-excerpt">{{excerpt}}</p>
+                            <div class="post-meta">
+                                <span class="author">By {{author_username}}</span>
+                                <span class="date">{{formatDate created_at}}</span>
+                                <span class="views">{{view_count}} 阅读</span>
+                            </div>
+                        </a>
+                    </article>
+                    {{/each}}
+                </div>
+
+                {{#if pagination}}
+                <nav class="pagination">
+                    {{#if pagination.hasPrev}}
+                        <a href="/?page={{sub pagination.page 1}}" class="btn">上一页</a>
+                    {{/if}}
+                    <span class="page-info">第 {{pagination.page}} / {{pagination.totalPages}} 页</span>
+                    {{#if pagination.hasNext}}
+                        <a href="/?page={{add pagination.page 1}}" class="btn">下一页</a>
+                    {{/if}}
+                </nav>
+                {{/if}}
+            {{else}}
+                <div class="empty-state">
+                    <p>还没有文章</p>
+                    {{#if user}}
+                        <a href="/editor" class="btn btn-primary">立即发布</a>
+                    {{else}}
+                        <a href="/register" class="btn btn-primary">开始写作</a>
+                    {{/if}}
+                </div>
+            {{/if}}
+        </section>
+    </main>
+
+    {{> footer}}
+</body>
+</html>

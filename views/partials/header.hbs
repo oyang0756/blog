@@ -15,6 +15,7 @@
                 <div class="user-info">
                     <div class="user-avatar">{{substring user.username 0 1}}</div>
                     <span class="username">{{user.username}}</span>
+                    <a href="/settings" class="settings-link">设置</a>
                 </div>
                 <form action="/logout" method="POST" class="logout-form">
                     <button type="submit">登出</button>

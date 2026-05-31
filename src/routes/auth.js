@@ -68,4 +68,30 @@ router.post('/logout', (req, res) => {
     });
 });
 
+router.get('/settings', (req, res) => {
+    res.render('settings', { user: req.user, error: null, success: null });
+});
+
+router.post('/settings/password',
+    body('oldPassword').notEmpty().withMessage('请输入原密码'),
+    body('newPassword').isLength({ min: 6 }).withMessage('新密码至少6位'),
+    body('confirmPassword').custom((value, { req }) => value === req.body.newPassword).withMessage('两次密码不一致'),
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.render('settings', { user: req.user, error: errors.array()[0].msg, success: null });
+        }
+
+        const { oldPassword, newPassword } = req.body;
+        const user = await User.findById(req.session.userId);
+
+        if (!User.verifyPassword(oldPassword, user.password_hash)) {
+            return res.render('settings', { user: req.user, error: '原密码错误', success: null });
+        }
+
+        await User.updatePassword(req.session.userId, newPassword);
+        res.render('settings', { user: req.user, error: null, success: '密码修改成功' });
+    }
+);
+
 module.exports = router;

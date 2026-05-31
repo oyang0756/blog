@@ -111,6 +111,11 @@ const User = {
 
     async delete(id) {
         await pool.query('DELETE FROM users WHERE id = $1', [id]);
+    },
+
+    async updatePassword(id, newPassword) {
+        const password_hash = bcrypt.hashSync(newPassword, 10);
+        await pool.query('UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [password_hash, id]);
     }
 };
 
@@ -296,7 +301,7 @@ function generateSlug(title) {
 function formatDate(dateStr) {
     if (!dateStr) return '';
     const date = new Date(dateStr);
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+    return date.toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(/\//g, '-');
 }
 
 module.exports = { initDb, User, Post, Comment, generateSlug, formatDate, pool };

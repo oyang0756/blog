@@ -21,12 +21,12 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-router.get('/', optionalAuth, (req, res) => {
+router.get('/', optionalAuth, async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = 9;
     const offset = (page - 1) * limit;
-    const posts = Post.findAll(limit, offset);
-    const total = Post.count();
+    const posts = await Post.findAll(limit, offset);
+    const total = await Post.count();
     const totalPages = Math.ceil(total / limit);
 
     res.render('index', {
@@ -37,7 +37,7 @@ router.get('/', optionalAuth, (req, res) => {
     });
 });
 
-router.get('/search', optionalAuth, (req, res) => {
+router.get('/search', optionalAuth, async (req, res) => {
     const query = req.query.q;
     if (!query || query.trim() === '') {
         return res.redirect('/');
@@ -45,7 +45,7 @@ router.get('/search', optionalAuth, (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = 9;
     const offset = (page - 1) * limit;
-    const posts = Post.search(query.trim(), limit, offset);
+    const posts = await Post.search(query.trim(), limit, offset);
     const total = posts.length;
 
     res.render('index', {
@@ -57,11 +57,11 @@ router.get('/search', optionalAuth, (req, res) => {
     });
 });
 
-router.get('/post/:slug', optionalAuth, (req, res) => {
-    const post = Post.findBySlug(req.params.slug);
+router.get('/post/:slug', optionalAuth, async (req, res) => {
+    const post = await Post.findBySlug(req.params.slug);
     if (!post) return res.status(404).render('404', { user: req.user || null });
-    Post.incrementViewCount(post.id);
-    const comments = Comment.findByPost(post.id);
+    await Post.incrementViewCount(post.id);
+    const comments = await Comment.findByPost(post.id);
     res.render('post', { user: req.user || null, post, comments });
 });
 
@@ -69,8 +69,8 @@ router.get('/editor', requireAuth, (req, res) => {
     res.render('editor', { user: req.user, post: null, error: null });
 });
 
-router.get('/editor/:id', requireAuth, (req, res) => {
-    const post = Post.findById(req.params.id);
+router.get('/editor/:id', requireAuth, async (req, res) => {
+    const post = await Post.findById(req.params.id);
     if (!post || (post.author_id !== req.user.id && req.user.role !== 'admin')) {
         return res.redirect('/editor');
     }
@@ -82,7 +82,7 @@ router.post('/posts',
     upload.single('image'),
     body('title').trim().isLength({ min: 1, max: 200 }).withMessage('标题不能为空且不超过200字'),
     body('content').trim().isLength({ min: 1 }).withMessage('内容不能为空'),
-    (req, res) => {
+    async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.render('editor', { user: req.user, post: null, error: errors.array()[0].msg });
@@ -95,7 +95,7 @@ router.post('/posts',
         }
         const slug = generateSlug(title);
 
-        const post = Post.create(title, slug, content, req.user.id, status || 'published');
+        const post = await Post.create(title, slug, content, req.user.id, status || 'published');
         res.redirect(`/post/${post.slug}`);
     }
 );
@@ -105,13 +105,13 @@ router.post('/posts/:id',
     upload.single('image'),
     body('title').trim().isLength({ min: 1, max: 200 }).withMessage('标题不能为空'),
     body('content').trim().isLength({ min: 1 }).withMessage('内容不能为空'),
-    (req, res) => {
+    async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.render('editor', { user: req.user, post: null, error: errors.array()[0].msg });
         }
 
-        const post = Post.findById(req.params.id);
+        const post = await Post.findById(req.params.id);
         if (!post || (post.author_id !== req.user.id && req.user.role !== 'admin')) {
             return res.redirect('/editor');
         }
@@ -122,15 +122,15 @@ router.post('/posts/:id',
             content += `\n\n<img src="${imageUrl}" alt="图片">`;
         }
         const slug = post.slug;
-        Post.update(post.id, title, slug, content, status || 'published');
+        await Post.update(post.id, title, slug, content, status || 'published');
         res.redirect(`/post/${slug}`);
     }
 );
 
-router.post('/posts/:id/delete', requireAuth, (req, res) => {
-    const post = Post.findById(req.params.id);
+router.post('/posts/:id/delete', requireAuth, async (req, res) => {
+    const post = await Post.findById(req.params.id);
     if (post && (post.author_id === req.user.id || req.user.role === 'admin')) {
-        Post.delete(post.id);
+        await Post.delete(post.id);
     }
     res.redirect('/');
 });

@@ -8,7 +8,7 @@ const router = express.Router();
 router.post('/posts/:postId/comments',
     requireAuth,
     body('content').trim().isLength({ min: 1, max: 2000 }).withMessage('评论内容需1-2000字'),
-    (req, res) => {
+    async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             if (req.xhr) {
@@ -17,13 +17,13 @@ router.post('/posts/:postId/comments',
             return res.redirect(`/post/${req.body.slug}`);
         }
 
-        const post = Post.findById(req.params.postId);
+        const post = await Post.findById(req.params.postId);
         if (!post) {
             return res.status(404).json({ success: false, error: { message: '文章不存在' } });
         }
 
         const { content, parentId } = req.body;
-        const comment = Comment.create(post.id, req.user.id, content, parentId || null);
+        const comment = await Comment.create(post.id, req.user.id, content, parentId || null);
 
         if (req.xhr) {
             return res.json({
@@ -39,17 +39,17 @@ router.post('/posts/:postId/comments',
     }
 );
 
-router.post('/comments/:id/delete', requireAuth, (req, res) => {
-    const comment = Comment.findById(req.params.id);
+router.post('/comments/:id/delete', requireAuth, async (req, res) => {
+    const comment = await Comment.findById(req.params.id);
     if (comment && (comment.author_id === req.user.id || req.user.role === 'admin')) {
-        Comment.delete(comment.id);
+        await Comment.delete(comment.id);
     }
-    const post = Post.findById(comment.post_id);
+    const post = await Post.findById(comment.post_id);
     res.redirect(post ? `/post/${post.slug}` : '/');
 });
 
-router.post('/comments/:id/update', requireAuth, (req, res) => {
-    const comment = Comment.findById(req.params.id);
+router.post('/comments/:id/update', requireAuth, async (req, res) => {
+    const comment = await Comment.findById(req.params.id);
     if (!comment) {
         return res.redirect('/');
     }
@@ -58,9 +58,9 @@ router.post('/comments/:id/update', requireAuth, (req, res) => {
     }
     const { content } = req.body;
     if (content && content.trim().length > 0 && content.trim().length <= 2000) {
-        Comment.update(comment.id, content.trim());
+        await Comment.update(comment.id, content.trim());
     }
-    const post = Post.findById(comment.post_id);
+    const post = await Post.findById(comment.post_id);
     res.redirect(post ? `/post/${post.slug}` : '/');
 });
 

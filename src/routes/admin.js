@@ -4,11 +4,10 @@ const { requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
 
-// 管理后台首页
-router.get('/admin', requireAdmin, (req, res) => {
-    const userCount = User.count();
-    const postCount = Post.count();
-    const commentCount = Comment.countAll();
+router.get('/admin', requireAdmin, async (req, res) => {
+    const userCount = await User.count();
+    const postCount = await Post.count();
+    const commentCount = await Comment.countAll();
     res.render('admin/dashboard', {
         user: req.user,
         userCount,
@@ -17,47 +16,44 @@ router.get('/admin', requireAdmin, (req, res) => {
     });
 });
 
-// 用户管理
-router.get('/admin/users', requireAdmin, (req, res) => {
-    const users = User.findAll();
+router.get('/admin/users', requireAdmin, async (req, res) => {
+    const users = await User.findAll();
     res.render('admin/users', { user: req.user, users });
 });
 
-router.post('/admin/users/:id/role', requireAdmin, (req, res) => {
+router.post('/admin/users/:id/role', requireAdmin, async (req, res) => {
     const { role } = req.body;
     if (role === 'admin' || role === 'user') {
-        User.updateRole(req.params.id, role);
+        await User.updateRole(req.params.id, role);
     }
     res.redirect('/admin/users');
 });
 
-router.post('/admin/users/:id/delete', requireAdmin, (req, res) => {
-    const user = User.findById(req.params.id);
+router.post('/admin/users/:id/delete', requireAdmin, async (req, res) => {
+    const user = await User.findById(req.params.id);
     if (user && user.id !== req.user.id) {
-        User.delete(user.id);
+        await User.delete(user.id);
     }
     res.redirect('/admin/users');
 });
 
-// 文章管理
-router.get('/admin/posts', requireAdmin, (req, res) => {
-    const posts = Post.findAllAdmin();
+router.get('/admin/posts', requireAdmin, async (req, res) => {
+    const posts = await Post.findAllAdmin();
     res.render('admin/posts', { user: req.user, posts });
 });
 
-router.post('/admin/posts/:id/delete', requireAdmin, (req, res) => {
-    Post.delete(req.params.id);
+router.post('/admin/posts/:id/delete', requireAdmin, async (req, res) => {
+    await Post.delete(req.params.id);
     res.redirect('/admin/posts');
 });
 
-// 评论管理
-router.get('/admin/comments', requireAdmin, (req, res) => {
-    const comments = Comment.findAll();
+router.get('/admin/comments', requireAdmin, async (req, res) => {
+    const comments = await Comment.findAll();
     res.render('admin/comments', { user: req.user, comments });
 });
 
-router.post('/admin/comments/:id/delete', requireAdmin, (req, res) => {
-    Comment.delete(req.params.id);
+router.post('/admin/comments/:id/delete', requireAdmin, async (req, res) => {
+    await Comment.delete(req.params.id);
     res.redirect('/admin/comments');
 });
 

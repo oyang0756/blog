@@ -207,9 +207,16 @@ button, input, select, textarea {
     background: transparent;
     cursor: pointer;
     color: var(--ink-mute);
-    font-size: 0.95rem;
-    padding: 0 0.25rem;
+    padding: 0 0.35rem;
     transition: color 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.search-form button svg {
+    width: 18px;
+    height: 18px;
 }
 
 .search-form button:hover {

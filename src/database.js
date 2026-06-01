@@ -7,6 +7,14 @@ const pool = new Pool({
     ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 });
 
+const CATEGORIES = [
+    { slug: 'tech', name: '技术' },
+    { slug: 'life', name: '生活' },
+    { slug: 'thoughts', name: '思考' },
+    { slug: 'essays', name: '随笔' }
+];
+const UNCATEGORIZED = { slug: 'uncategorized', name: '未分类' };
+
 let db;
 
 async function initDb() {
@@ -41,6 +49,28 @@ async function initDb() {
         )
     `);
 
+    // Add category column if it doesn't exist (PostgreSQL 9.6+)
+    await pool.query(`
+        ALTER TABLE posts ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'uncategorized'
+    `);
+
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS tags (
+            id SERIAL PRIMARY KEY,
+            name TEXT UNIQUE NOT NULL,
+            slug TEXT UNIQUE NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS post_tags (
+            post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+            tag_id INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+            PRIMARY KEY (post_id, tag_id)
+        )
+    `);
+
     await pool.query(`
         CREATE TABLE IF NOT EXISTS comments (
             id SERIAL PRIMARY KEY,
@@ -64,6 +94,15 @@ async function initDb() {
     }
 
     return pool;
+}
+
+function tagSlugify(name) {
+    return name
+        .toLowerCase()
+        .replace(/[^a-z0-9一-龥]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '')
+        || 'tag';
 }
 
 const User = {
@@ -119,12 +158,43 @@ const User = {
     }
 };
 
+const Tag = {
+    async findOrCreate(name) {
+        const trimmed = name.trim();
+        if (!trimmed) return null;
+        const slug = tagSlugify(trimmed);
+        const existing = await pool.query('SELECT * FROM tags WHERE name = $1 OR slug = $2 LIMIT 1', [trimmed, slug]);
+        if (existing.rows.length > 0) return existing.rows[0];
+        const result = await pool.query(
+            'INSERT INTO tags (name, slug) VALUES ($1, $2) RETURNING *',
+            [trimmed, slug]
+        );
+        return result.rows[0];
+    },
+
+    async findAll() {
+        const result = await pool.query(`
+            SELECT tags.*, COUNT(post_tags.post_id)::int AS post_count
+            FROM tags
+            LEFT JOIN post_tags ON tags.id = post_tags.tag_id
+            GROUP BY tags.id
+            ORDER BY post_count DESC, tags.name ASC
+        `);
+        return result.rows;
+    },
+
+    async findBySlug(slug) {
+        const result = await pool.query('SELECT * FROM tags WHERE slug = $1', [slug]);
+        return result.rows[0] || null;
+    }
+};
+
 const Post = {
-    async create(title, slug, content, authorId, status = 'published') {
+    async create(title, slug, content, authorId, status = 'published', category = 'uncategorized') {
         const excerpt = content.replace(/<[^>]+>/g, '').slice(0, 200).replace(/[#*`>\-\[\]]/g, '') + '...';
         const result = await pool.query(
-            'INSERT INTO posts (title, slug, content, excerpt, author_id, status) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-            [title, slug, content, excerpt, authorId, status]
+            'INSERT INTO posts (title, slug, content, excerpt, author_id, status, category) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+            [title, slug, content, excerpt, authorId, status, category]
         );
         return this.findById(result.rows[0].id);
     },
@@ -139,6 +209,7 @@ const Post = {
         if (result.rows.length === 0) return null;
         const post = result.rows[0];
         post.html = renderMarkdown(post.content);
+        post.tags = await this.getTags(post.id);
         return post;
     },
 
@@ -152,22 +223,30 @@ const Post = {
         if (result.rows.length === 0) return null;
         const post = result.rows[0];
         post.html = renderMarkdown(post.content);
+        post.tags = await this.getTags(post.id);
         return post;
     },
 
-    async findAll(limit = 20, offset = 0) {
+    async findAll(limit = 20, offset = 0, category = null) {
+        const params = [limit, offset];
+        let categoryFilter = '';
+        if (category) {
+            categoryFilter = 'AND posts.category = $3';
+            params.push(category);
+        }
         const result = await pool.query(`
             SELECT posts.*, users.username as author_username
             FROM posts
             JOIN users ON posts.author_id = users.id
-            WHERE status = 'published'
+            WHERE status = 'published' ${categoryFilter}
             ORDER BY created_at DESC
             LIMIT $1 OFFSET $2
-        `, [limit, offset]);
-        return result.rows.map(post => {
+        `, params);
+        return await Promise.all(result.rows.map(async post => {
             post.html = renderMarkdown(post.content);
+            post.tags = await this.getTags(post.id);
             return post;
-        });
+        }));
     },
 
     async findByAuthor(authorId) {
@@ -178,19 +257,20 @@ const Post = {
             WHERE author_id = $1
             ORDER BY created_at DESC
         `, [authorId]);
-        return result.rows.map(post => {
+        return await Promise.all(result.rows.map(async post => {
             post.html = renderMarkdown(post.content);
+            post.tags = await this.getTags(post.id);
             return post;
-        });
+        }));
     },
 
-    async update(id, title, slug, content, status) {
+    async update(id, title, slug, content, status, category = 'uncategorized') {
         const excerpt = content.replace(/<[^>]+>/g, '').slice(0, 200).replace(/[#*`>\-\[\]]/g, '') + '...';
         await pool.query(`
             UPDATE posts
-            SET title = $1, slug = $2, content = $3, excerpt = $4, status = $5, updated_at = CURRENT_TIMESTAMP
-            WHERE id = $6
-        `, [title, slug, content, excerpt, status, id]);
+            SET title = $1, slug = $2, content = $3, excerpt = $4, status = $5, category = $6, updated_at = CURRENT_TIMESTAMP
+            WHERE id = $7
+        `, [title, slug, content, excerpt, status, category, id]);
         return this.findById(id);
     },
 
@@ -202,25 +282,39 @@ const Post = {
         await pool.query('UPDATE posts SET view_count = view_count + 1 WHERE id = $1', [id]);
     },
 
-    async count() {
-        const result = await pool.query("SELECT COUNT(*) as count FROM posts WHERE status = 'published'");
+    async count(category = null) {
+        const params = [];
+        let categoryFilter = '';
+        if (category) {
+            categoryFilter = 'AND category = $1';
+            params.push(category);
+        }
+        const result = await pool.query(`SELECT COUNT(*) as count FROM posts WHERE status = 'published' ${categoryFilter}`, params);
         return parseInt(result.rows[0].count);
     },
 
-    async search(query, limit = 20, offset = 0) {
+    async search(query, limit = 20, offset = 0, category = null) {
+        const params = [`%${query}%`, limit, offset];
+        let categoryFilter = '';
+        if (category) {
+            categoryFilter = 'AND posts.category = $4';
+            params.push(category);
+        }
         const result = await pool.query(`
             SELECT posts.*, users.username as author_username
             FROM posts
             JOIN users ON posts.author_id = users.id
             WHERE status = 'published'
             AND (title LIKE $1 OR content LIKE $1)
+            ${categoryFilter}
             ORDER BY created_at DESC
             LIMIT $2 OFFSET $3
-        `, [`%${query}%`, limit, offset]);
-        return result.rows.map(post => {
+        `, params);
+        return await Promise.all(result.rows.map(async post => {
             post.html = renderMarkdown(post.content);
+            post.tags = await this.getTags(post.id);
             return post;
-        });
+        }));
     },
 
     async findAllAdmin() {
@@ -231,6 +325,31 @@ const Post = {
             ORDER BY created_at DESC
         `);
         return result.rows;
+    },
+
+    async getTags(postId) {
+        const result = await pool.query(`
+            SELECT tags.id, tags.name, tags.slug
+            FROM tags
+            JOIN post_tags ON tags.id = post_tags.tag_id
+            WHERE post_tags.post_id = $1
+            ORDER BY tags.name ASC
+        `, [postId]);
+        return result.rows;
+    },
+
+    async setTags(postId, tagNames) {
+        await pool.query('DELETE FROM post_tags WHERE post_id = $1', [postId]);
+        if (!tagNames || tagNames.length === 0) return;
+        for (const name of tagNames) {
+            const tag = await Tag.findOrCreate(name);
+            if (tag) {
+                await pool.query(
+                    'INSERT INTO post_tags (post_id, tag_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+                    [postId, tag.id]
+                );
+            }
+        }
     }
 };
 
@@ -304,4 +423,4 @@ function formatDate(dateStr) {
     return date.toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(/\//g, '-');
 }
 
-module.exports = { initDb, User, Post, Comment, generateSlug, formatDate, pool };
+module.exports = { initDb, User, Post, Comment, Tag, generateSlug, formatDate, CATEGORIES, UNCATEGORIZED, pool };

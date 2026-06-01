@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const { body, validationResult } = require('express-validator');
-const { Post, Comment, generateSlug } = require('../database');
+const { Post, Comment, Tag, generateSlug, CATEGORIES } = require('../database');
 const { requireAuth, requireAdmin, optionalAuth } = require('../middleware/auth');
 
 const router = express.Router();
@@ -21,18 +21,30 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
+function parseTags(input) {
+    if (!input) return [];
+    return input
+        .split(/[,，\s]+/)
+        .map(t => t.trim())
+        .filter(t => t.length > 0)
+        .slice(0, 10);
+}
+
 router.get('/', optionalAuth, async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = 9;
     const offset = (page - 1) * limit;
-    const posts = await Post.findAll(limit, offset);
-    const total = await Post.count();
+    const category = req.query.category || null;
+    const posts = await Post.findAll(limit, offset, category);
+    const total = await Post.count(category);
     const totalPages = Math.ceil(total / limit);
 
     res.render('index', {
         user: req.user || null,
         posts,
         total,
+        categories: CATEGORIES,
+        activeCategory: category,
         pagination: { page, totalPages, hasPrev: page > 1, hasNext: page < totalPages }
     });
 });
@@ -45,7 +57,8 @@ router.get('/search', optionalAuth, async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = 9;
     const offset = (page - 1) * limit;
-    const posts = await Post.search(query.trim(), limit, offset);
+    const category = req.query.category || null;
+    const posts = await Post.search(query.trim(), limit, offset, category);
     const total = posts.length;
 
     res.render('index', {
@@ -53,6 +66,8 @@ router.get('/search', optionalAuth, async (req, res) => {
         posts,
         total,
         searchQuery: query.trim(),
+        categories: CATEGORIES,
+        activeCategory: category,
         pagination: { page, totalPages: 1, hasPrev: false, hasNext: false }
     });
 });
@@ -62,11 +77,22 @@ router.get('/post/:slug', optionalAuth, async (req, res) => {
     if (!post) return res.status(404).render('404', { user: req.user || null });
     await Post.incrementViewCount(post.id);
     const comments = await Comment.findByPost(post.id);
-    res.render('post', { user: req.user || null, post, comments });
+    res.render('post', {
+        user: req.user || null,
+        post,
+        comments,
+        categories: CATEGORIES
+    });
 });
 
 router.get('/editor', requireAuth, (req, res) => {
-    res.render('editor', { user: req.user, post: null, error: null });
+    res.render('editor', {
+        user: req.user,
+        post: null,
+        error: null,
+        categories: CATEGORIES,
+        tagsString: ''
+    });
 });
 
 router.get('/editor/:id', requireAuth, async (req, res) => {
@@ -74,7 +100,14 @@ router.get('/editor/:id', requireAuth, async (req, res) => {
     if (!post || (post.author_id !== req.user.id && req.user.role !== 'admin')) {
         return res.redirect('/editor');
     }
-    res.render('editor', { user: req.user, post, error: null });
+    const tagsString = (post.tags || []).map(t => t.name).join(', ');
+    res.render('editor', {
+        user: req.user,
+        post,
+        error: null,
+        categories: CATEGORIES,
+        tagsString
+    });
 });
 
 router.post('/posts',
@@ -85,17 +118,24 @@ router.post('/posts',
     async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.render('editor', { user: req.user, post: null, error: errors.array()[0].msg });
+            return res.render('editor', {
+                user: req.user, post: null,
+                error: errors.array()[0].msg,
+                categories: CATEGORIES,
+                tagsString: req.body.tags || ''
+            });
         }
 
-        let { title, content, status } = req.body;
+        let { title, content, status, category, tags } = req.body;
         if (req.file) {
             const imageUrl = `/uploads/${req.file.filename}`;
             content += `\n\n<img src="${imageUrl}" alt="图片">`;
         }
         const slug = generateSlug(title);
+        const validCategory = CATEGORIES.find(c => c.slug === category) ? category : 'uncategorized';
 
-        const post = await Post.create(title, slug, content, req.user.id, status || 'published');
+        const post = await Post.create(title, slug, content, req.user.id, status || 'published', validCategory);
+        await Post.setTags(post.id, parseTags(tags));
         res.redirect(`/post/${post.slug}`);
     }
 );
@@ -108,7 +148,12 @@ router.post('/posts/:id',
     async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.render('editor', { user: req.user, post: null, error: errors.array()[0].msg });
+            return res.render('editor', {
+                user: req.user, post: null,
+                error: errors.array()[0].msg,
+                categories: CATEGORIES,
+                tagsString: req.body.tags || ''
+            });
         }
 
         const post = await Post.findById(req.params.id);
@@ -116,13 +161,15 @@ router.post('/posts/:id',
             return res.redirect('/editor');
         }
 
-        let { title, content, status } = req.body;
+        let { title, content, status, category, tags } = req.body;
         if (req.file) {
             const imageUrl = `/uploads/${req.file.filename}`;
             content += `\n\n<img src="${imageUrl}" alt="图片">`;
         }
         const slug = post.slug;
-        await Post.update(post.id, title, slug, content, status || 'published');
+        const validCategory = CATEGORIES.find(c => c.slug === category) ? category : 'uncategorized';
+        await Post.update(post.id, title, slug, content, status || 'published', validCategory);
+        await Post.setTags(post.id, parseTags(tags));
         res.redirect(`/post/${slug}`);
     }
 );

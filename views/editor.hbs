@@ -38,6 +38,19 @@
                         <option value="draft">草稿</option>
                     </select>
                 </div>
+                <div class="form-group">
+                    <label for="category">分类</label>
+                    <select id="category" name="category">
+                        <option value="uncategorized" {{#if post}}{{#unless (eq post.category "tech")}}{{#unless (eq post.category "life")}}{{#unless (eq post.category "thoughts")}}{{#unless (eq post.category "essays")}}selected{{/unless}}{{/unless}}{{/unless}}{{/unless}}{{else}}selected{{/if}}>未分类</option>
+                        {{#each categories}}
+                        <option value="{{slug}}" {{#if (eq ../post.category slug)}}selected{{/if}}>{{name}}</option>
+                        {{/each}}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="tags">标签</label>
+                    <input type="text" id="tags" name="tags" value="{{tagsString}}" placeholder="用逗号分隔，如：Node.js, Railway, 部署">
+                </div>
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary">{{#if post}}保存修改{{else}}发布{{/if}}</button>
                     <a href="/" class="btn">取消</a>

@@ -1070,4 +1070,115 @@ a {
         flex-wrap: wrap;
         gap: 12px;
     }
+
+    .category-bar {
+        flex-wrap: wrap;
+    }
+}
+
+/* ============== 分类 Tab Bar ============== */
+.category-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    max-width: 1200px;
+    margin: 0 auto 2rem;
+    padding: 0 24px;
+}
+
+.category-tab {
+    display: inline-block;
+    padding: 0.5rem 1.25rem;
+    border-radius: 999px;
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 500;
+    border: 1px solid var(--border);
+    transition: all 0.2s ease;
+}
+
+.category-tab:hover {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    transform: translateY(-1px);
+}
+
+.category-tab.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+/* ============== 分类徽章 ============== */
+.category-badge {
+    display: inline-block;
+    padding: 0.2rem 0.75rem;
+    background: var(--primary);
+    color: white;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: opacity 0.2s ease;
+}
+
+.category-badge:hover {
+    opacity: 0.85;
+}
+
+/* ============== 标签 Pills ============== */
+.post-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0.5rem 0;
+}
+
+.tag-pill {
+    display: inline-block;
+    padding: 0.15rem 0.65rem;
+    background: var(--bg);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: 0.8rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.tag-pill:hover {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.post-taxonomy {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0.75rem 0;
+}
+
+.post-taxonomy .post-tags {
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .category-bar {
+        padding: 0 16px;
+    }
+
+    .category-tab {
+        font-size: 0.85rem;
+        padding: 0.4rem 1rem;
+    }
+
+    .post-taxonomy {
+        gap: 0.5rem;
+    }
+}
 }

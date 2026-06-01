@@ -8,3 +8,15 @@ src/cookies*.txt
 src/fresh.txt
 src/test.txt
 src/test2.txt
+
+# 早期实验项目文件
+CLAUDE.md
+*.pptx
+*.pdf
+canvas-design-pptx.js
+design_philosophy.md
+loneliness_philosophy.md
+labrador-police_*.jpg
+song_*.mp3
+61-poster.*
+loneliness-poster.*

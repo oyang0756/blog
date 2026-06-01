@@ -14,7 +14,6 @@
 | 认证 | bcryptjs + express-session |
 | Markdown | marked + highlight.js |
 | Frontmatter 解析 | gray-matter |
-| 演示文稿 | pptxgenjs（内置功能） |
 
 ## 功能
 
@@ -27,7 +26,6 @@
 - ✅ 响应式设计（东方编辑杂志风）
 - ✅ 代码高亮
 - ✅ 图片上传
-- ✅ PPT 生成（/admin/ppt 功能）
 
 ## 快速开始
 

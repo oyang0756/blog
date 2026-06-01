@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{#if post}}编辑文章{{else}}写文章{{/if}} - 博客</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet">
+    <title>{{#if post}}编辑文章{{else}}写文章{{/if}} · Oyang的博客</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Noto+Serif+SC:wght@300;400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
@@ -24,18 +26,18 @@
                     <input type="text" id="title" name="title" value="{{post.title}}" required placeholder="输入文章标题">
                 </div>
                 <div class="form-group">
-                    <label for="content">内容 (Markdown)</label>
+                    <label for="content">内容 · Markdown</label>
                     <textarea id="content" name="content" required placeholder="用 Markdown 编写你的文章...">{{post.content}}</textarea>
                 </div>
                 <div class="form-group">
-                    <label for="image">上传图片/GIF</label>
+                    <label for="image">上传图片 / GIF</label>
                     <input type="file" id="image" name="image" accept="image/*">
                 </div>
                 <div class="form-group">
                     <label for="status">状态</label>
                     <select id="status" name="status">
-                        <option value="published">发布</option>
-                        <option value="draft">草稿</option>
+                        <option value="published" {{#if post}}{{#if (eq post.status "published")}}selected{{/if}}{{else}}selected{{/if}}>发布</option>
+                        <option value="draft" {{#if (eq post.status "draft")}}selected{{/if}}>草稿</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -48,8 +50,8 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="tags">标签</label>
-                    <input type="text" id="tags" name="tags" value="{{tagsString}}" placeholder="用逗号分隔，如：Node.js, Railway, 部署">
+                    <label for="tags">标签 · 逗号分隔</label>
+                    <input type="text" id="tags" name="tags" value="{{tagsString}}" placeholder="如：Node.js, Railway, 部署">
                 </div>
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary">{{#if post}}保存修改{{else}}发布{{/if}}</button>

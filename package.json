@@ -12,6 +12,7 @@
     "express": "^5.0.1",
     "express-session": "^1.18.1",
     "express-validator": "^7.2.0",
+    "gray-matter": "^4.0.3",
     "handlebars": "^4.7.9",
     "highlight.js": "^11.11.0",
     "marked": "^15.0.0",

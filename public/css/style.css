@@ -1407,8 +1407,169 @@ button, input, select, textarea {
 }
 
 /* ============================================
-   FOOTER
+   IMPORT (Markdown batch import)
    ============================================ */
+
+.import-form-wrap {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 2.5rem;
+    background: var(--paper-3);
+    border: 1px solid var(--rule);
+}
+
+.import-form-wrap .subtitle {
+    text-align: center;
+    color: var(--ink-mute);
+    font-style: italic;
+    letter-spacing: 0.05em;
+    margin-bottom: 1.5rem;
+    font-size: 1rem;
+}
+
+.import-hint {
+    text-align: center;
+    color: var(--ink-mute);
+    font-size: 0.85rem;
+    margin-bottom: 2rem;
+    line-height: 1.8;
+}
+
+.import-hint code {
+    font-family: var(--font-mono);
+    background: var(--paper-2);
+    padding: 0.05em 0.4em;
+    font-size: 0.85em;
+    color: var(--cinnabar);
+    margin: 0 0.15em;
+}
+
+.import-form input[type="file"] {
+    width: 100%;
+    padding: 1rem;
+    border: 1px dashed var(--rule);
+    background: var(--paper);
+    color: var(--ink-soft);
+    font-family: var(--font-zh);
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+}
+
+.import-form input[type="file"]:hover {
+    border-color: var(--cinnabar);
+}
+
+.form-hint {
+    display: block;
+    margin-top: 0.4rem;
+    color: var(--ink-faint);
+    font-size: 0.8rem;
+    font-style: italic;
+    font-family: var(--font-zh);
+}
+
+.import-form .form-actions {
+    margin-top: 2rem;
+    justify-content: center;
+}
+
+.import-form .btn-primary {
+    padding: 0.7rem 2.5rem;
+    letter-spacing: 0.15em;
+}
+
+.import-example {
+    margin-top: 2rem;
+    border-top: 1px solid var(--rule-soft);
+    padding-top: 1.5rem;
+}
+
+.import-example summary {
+    color: var(--ink-mute);
+    font-size: 0.9rem;
+    cursor: pointer;
+    font-style: italic;
+    letter-spacing: 0.05em;
+    padding: 0.25rem 0;
+}
+
+.import-example summary:hover {
+    color: var(--cinnabar);
+}
+
+.import-example pre {
+    background: var(--ink);
+    color: #e8d9b3;
+    padding: 1.5em;
+    margin-top: 1rem;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    border-left: 3px solid var(--cinnabar);
+    overflow-x: auto;
+}
+
+.import-results {
+    margin-top: 1rem;
+}
+
+.import-summary {
+    text-align: center;
+    font-size: 1.05rem;
+    color: var(--ink-soft);
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background: var(--paper-3);
+    border: 1px solid var(--rule);
+    font-family: var(--font-zh);
+}
+
+.import-summary .count-ok { color: #1e4a2a; font-style: italic; }
+.import-summary .count-fail { color: var(--cinnabar); font-style: italic; }
+
+.import-table .status-badge {
+    display: inline-block;
+    padding: 0.15rem 0.6rem;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-family: var(--font-mono);
+    border: 1px solid;
+}
+
+.import-table .status-ok {
+    color: #1e4a2a;
+    border-color: #2e6d40;
+    background: rgba(46, 109, 64, 0.08);
+}
+
+.import-table .status-fail {
+    color: var(--cinnabar);
+    border-color: var(--cinnabar);
+    background: rgba(184, 66, 31, 0.08);
+}
+
+.import-table .error-msg {
+    color: var(--cinnabar-deep);
+    font-size: 0.85rem;
+    font-style: italic;
+}
+
+.import-table code {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    background: var(--paper-2);
+    padding: 0.05em 0.4em;
+    color: var(--ink-soft);
+}
+
+.import-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--rule);
+}
 
 .site-footer {
     border-top: 1px solid var(--rule);

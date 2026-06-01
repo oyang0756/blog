@@ -8,6 +8,7 @@ src/cookies*.txt
 src/fresh.txt
 src/test.txt
 src/test2.txt
+src/public/
 
 # 早期实验项目文件
 CLAUDE.md

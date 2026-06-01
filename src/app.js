@@ -18,6 +18,7 @@ async function startApp() {
     handlebars.registerHelper('or', (a, b) => a || b);
     handlebars.registerHelper('add', (a, b) => a + b);
     handlebars.registerHelper('sub', (a, b) => a - b);
+    handlebars.registerHelper('gt', (a, b) => Number(a) > Number(b));
     handlebars.registerHelper('formatDate', (date) => formatDate(date));
     handlebars.registerHelper('substring', (str, start, end) => str.substring(start, end));
 

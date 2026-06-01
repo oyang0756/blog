@@ -68,11 +68,36 @@
                 {{#if pagination}}
                 <nav class="pagination">
                     {{#if pagination.hasPrev}}
-                        <a href="/?page={{sub pagination.page 1}}{{#if activeCategory}}&category={{activeCategory}}{{/if}}" class="btn">上一页</a>
+                        <a href="?page={{sub pagination.page 1}}{{#if activeCategory}}&category={{activeCategory}}{{/if}}{{#if searchQuery}}&q={{searchQuery}}{{/if}}" class="btn page-prev">← 上一页</a>
                     {{/if}}
-                    <span class="page-info">第 {{pagination.page}} / {{pagination.totalPages}} 页</span>
+
+                    {{#if pageList}}
+                    <div class="page-numbers">
+                        {{#each pageList}}
+                            {{#if this}}
+                                {{#if (eq this ../pagination.page)}}
+                                <span class="page-current">{{this}}</span>
+                                {{else}}
+                                <a href="?page={{this}}{{#if ../activeCategory}}&category={{../activeCategory}}{{/if}}{{#if ../searchQuery}}&q={{../searchQuery}}{{/if}}" class="page-num">{{this}}</a>
+                                {{/if}}
+                            {{else}}
+                                <span class="page-ellipsis">…</span>
+                            {{/if}}
+                        {{/each}}
+                    </div>
+                    {{/if}}
+
                     {{#if pagination.hasNext}}
-                        <a href="/?page={{add pagination.page 1}}{{#if activeCategory}}&category={{activeCategory}}{{/if}}" class="btn">下一页</a>
+                        <a href="?page={{add pagination.page 1}}{{#if activeCategory}}&category={{activeCategory}}{{/if}}{{#if searchQuery}}&q={{searchQuery}}{{/if}}" class="btn page-next">下一页 →</a>
+                    {{/if}}
+
+                    {{#if (gt pagination.totalPages 7)}}
+                    <form class="page-jump" method="GET" action="">
+                        {{#if activeCategory}}<input type="hidden" name="category" value="{{activeCategory}}">{{/if}}
+                        {{#if searchQuery}}<input type="hidden" name="q" value="{{searchQuery}}">{{/if}}
+                        <input type="number" name="page" min="1" max="{{pagination.totalPages}}" placeholder="页码" aria-label="跳转到页码" required />
+                        <button type="submit" class="btn">GO</button>
+                    </form>
                     {{/if}}
                 </nav>
                 {{/if}}

@@ -635,10 +635,105 @@ button, input, select, textarea {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 1.5rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
     margin-top: 4rem;
     padding-top: 2rem;
     border-top: 1px solid var(--rule);
+}
+
+.page-numbers {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0 0.5rem;
+}
+
+.page-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.25rem;
+    height: 2.25rem;
+    padding: 0 0.5rem;
+    color: var(--ink-soft);
+    text-decoration: none;
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.page-num:hover {
+    color: var(--cinnabar);
+    border-color: var(--rule);
+}
+
+.page-current {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.25rem;
+    height: 2.25rem;
+    padding: 0 0.5rem;
+    color: var(--paper-3);
+    background: var(--cinnabar);
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.page-ellipsis {
+    color: var(--ink-faint);
+    padding: 0 0.25rem;
+    font-family: var(--font-mono);
+    user-select: none;
+}
+
+.page-prev, .page-next {
+    font-size: 0.85rem;
+    padding: 0.5rem 1rem;
+}
+
+.page-jump {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-left: 0.5rem;
+    padding-left: 0.75rem;
+    border-left: 1px solid var(--rule-soft);
+}
+
+.page-jump input[type="number"] {
+    width: 4rem;
+    height: 2.25rem;
+    padding: 0 0.5rem;
+    border: 1px solid var(--rule);
+    background: var(--paper-3);
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    text-align: center;
+    -moz-appearance: textfield;
+    border-radius: 0;
+}
+
+.page-jump input[type="number"]::-webkit-outer-spin-button,
+.page-jump input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.page-jump input[type="number"]:focus {
+    outline: none;
+    border-color: var(--cinnabar);
+}
+
+.page-jump button {
+    height: 2.25rem;
+    padding: 0 0.85rem;
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
 }
 
 .page-info {
@@ -646,6 +741,32 @@ button, input, select, textarea {
     font-size: 0.85rem;
     font-family: var(--font-mono);
     letter-spacing: 0.1em;
+}
+
+@media (max-width: 768px) {
+    .pagination {
+        gap: 0.4rem;
+    }
+
+    .page-num, .page-current {
+        min-width: 2rem;
+        height: 2rem;
+        font-size: 0.8rem;
+    }
+
+    .page-prev, .page-next {
+        font-size: 0.75rem;
+        padding: 0.4rem 0.6rem;
+    }
+
+    .page-jump {
+        margin-left: 0;
+        padding-left: 0;
+        border-left: none;
+        width: 100%;
+        justify-content: center;
+        margin-top: 0.5rem;
+    }
 }
 
 /* ============================================

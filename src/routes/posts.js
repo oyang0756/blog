@@ -30,6 +30,27 @@ function parseTags(input) {
         .slice(0, 10);
 }
 
+function buildPageList(current, totalPages) {
+    if (totalPages <= 7) {
+        return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    const candidates = new Set([
+        1, totalPages,
+        current - 2, current - 1, current, current + 1, current + 2
+    ]);
+    const sorted = [...candidates]
+        .filter(p => p >= 1 && p <= totalPages)
+        .sort((a, b) => a - b);
+    const result = [];
+    let prev = 0;
+    for (const p of sorted) {
+        if (p - prev > 1) result.push(null);
+        result.push(p);
+        prev = p;
+    }
+    return result;
+}
+
 router.get('/', optionalAuth, async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = 9;
@@ -38,6 +59,7 @@ router.get('/', optionalAuth, async (req, res) => {
     const posts = await Post.findAll(limit, offset, category);
     const total = await Post.count(category);
     const totalPages = Math.ceil(total / limit);
+    const pageList = buildPageList(page, totalPages);
 
     res.render('index', {
         user: req.user || null,
@@ -45,7 +67,8 @@ router.get('/', optionalAuth, async (req, res) => {
         total,
         categories: CATEGORIES,
         activeCategory: category,
-        pagination: { page, totalPages, hasPrev: page > 1, hasNext: page < totalPages }
+        pagination: { page, totalPages, hasPrev: page > 1, hasNext: page < totalPages },
+        pageList
     });
 });
 
@@ -60,6 +83,8 @@ router.get('/search', optionalAuth, async (req, res) => {
     const category = req.query.category || null;
     const posts = await Post.search(query.trim(), limit, offset, category);
     const total = posts.length;
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const pageList = buildPageList(page, totalPages);
 
     res.render('index', {
         user: req.user || null,
@@ -68,7 +93,8 @@ router.get('/search', optionalAuth, async (req, res) => {
         searchQuery: query.trim(),
         categories: CATEGORIES,
         activeCategory: category,
-        pagination: { page, totalPages: 1, hasPrev: false, hasNext: false }
+        pagination: { page, totalPages, hasPrev: page > 1, hasNext: page < totalPages },
+        pageList
     });
 });
 

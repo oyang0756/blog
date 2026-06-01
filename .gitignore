@@ -3,6 +3,7 @@ database.sqlite
 *.log
 .DS_Store
 .env
+.claude/
 src/cookies*.txt
 src/fresh.txt
 src/test.txt

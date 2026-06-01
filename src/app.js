@@ -47,7 +47,14 @@ async function startApp() {
         });
     });
 
-    app.use(express.static(path.join(__dirname, '..', 'public')));
+    app.use(express.static(path.join(__dirname, '..', 'public'), {
+        setHeaders: (res, path) => {
+            // 强制所有资源使用 HTTPS
+            if (process.env.FORCE_HTTPS === 'true') {
+                res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+            }
+        }
+    }));
     app.use(express.urlencoded({ extended: true }));
     app.use(express.json());
 

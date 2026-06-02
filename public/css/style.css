@@ -962,8 +962,32 @@ button, input, select, textarea {
 }
 
 /* ============================================
-   POST BACK BUTTON + SCROLL TO TOP
+   ROLE BADGE
    ============================================ */
+
+.role-badge {
+    display: inline-block;
+    padding: 0.1rem 0.5rem;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-family: var(--font-mono);
+    border: 1px solid;
+    line-height: 1.4;
+    margin-left: 0.4rem;
+}
+
+.role-badge.role-admin {
+    color: var(--paper-3);
+    background: var(--cinnabar);
+    border-color: var(--cinnabar);
+}
+
+.role-badge.role-vip {
+    color: var(--cinnabar);
+    background: transparent;
+    border-color: var(--cinnabar);
+}
 
 .post-back {
     display: inline-block;

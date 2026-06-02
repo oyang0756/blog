@@ -4,8 +4,10 @@
         <nav class="nav">
             <a href="/">首页</a>
             {{#if user}}
-                {{#if (eq user.role "admin")}}
+                {{#if (or (eq user.role "admin") (eq user.role "vip"))}}
                 <a href="/editor">写文章</a>
+                {{/if}}
+                {{#if (eq user.role "admin")}}
                 <a href="/admin">管理</a>
                 {{/if}}
             {{/if}}
@@ -22,6 +24,9 @@
                 <div class="user-info">
                     <div class="user-avatar">{{substring user.username 0 1}}</div>
                     <span class="username">{{user.username}}</span>
+                    {{#if (eq user.role "admin")}}<span class="role-badge role-admin">管理员</span>
+                    {{else if (eq user.role "vip")}}<span class="role-badge role-vip">VIP</span>
+                    {{/if}}
                     <a href="/settings" class="settings-link">设置</a>
                 </div>
                 <form action="/logout" method="POST" class="logout-form">

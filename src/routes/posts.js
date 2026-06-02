@@ -4,7 +4,7 @@ const fs = require('fs');
 const multer = require('multer');
 const { body, validationResult } = require('express-validator');
 const { Post, Comment, Tag, generateSlug, CATEGORIES } = require('../database');
-const { requireAuth, requireAdmin, optionalAuth } = require('../middleware/auth');
+const { requireAuth, requireAdmin, requireVip, optionalAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -144,7 +144,7 @@ router.get('/post/:slug', optionalAuth, async (req, res) => {
     });
 });
 
-router.get('/editor', requireAdmin, (req, res) => {
+router.get('/editor', requireVip, (req, res) => {
     res.render('editor', {
         user: req.user,
         post: null,
@@ -154,7 +154,7 @@ router.get('/editor', requireAdmin, (req, res) => {
     });
 });
 
-router.get('/editor/:id', requireAdmin, async (req, res) => {
+router.get('/editor/:id', requireVip, async (req, res) => {
     const post = await Post.findById(req.params.id);
     if (!post || (post.author_id !== req.user.id && req.user.role !== 'admin')) {
         return res.redirect('/editor');
@@ -170,7 +170,7 @@ router.get('/editor/:id', requireAdmin, async (req, res) => {
 });
 
 router.post('/posts',
-    requireAdmin,
+    requireVip,
     upload.single('image'),
     body('title').trim().isLength({ min: 1, max: 200 }).withMessage('标题不能为空且不超过200字'),
     body('content').trim().isLength({ min: 1 }).withMessage('内容不能为空'),
@@ -200,7 +200,7 @@ router.post('/posts',
 );
 
 router.post('/posts/:id',
-    requireAdmin,
+    requireVip,
     upload.single('image'),
     body('title').trim().isLength({ min: 1, max: 200 }).withMessage('标题不能为空'),
     body('content').trim().isLength({ min: 1 }).withMessage('内容不能为空'),

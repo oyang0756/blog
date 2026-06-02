@@ -75,7 +75,7 @@ router.get('/admin/users', requireAdmin, async (req, res) => {
 
 router.post('/admin/users/:id/role', requireAdmin, async (req, res) => {
     const { role } = req.body;
-    if (role === 'admin' || role === 'user') {
+    if (role === 'admin' || role === 'vip' || role === 'user') {
         await User.updateRole(req.params.id, role);
     }
     res.redirect('/admin/users');

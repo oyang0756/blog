@@ -38,6 +38,7 @@
                             <form method="POST" action="/admin/users/{{id}}/role" class="role-form" style="display:inline;">
                                 <select name="role" onchange="this.form.submit()">
                                     <option value="user" {{#if (eq role "user")}}selected{{/if}}>普通用户</option>
+                                    <option value="vip" {{#if (eq role "vip")}}selected{{/if}}>VIP</option>
                                     <option value="admin" {{#if (eq role "admin")}}selected{{/if}}>管理员</option>
                                 </select>
                             </form>

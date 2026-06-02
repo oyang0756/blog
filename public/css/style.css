@@ -373,7 +373,7 @@ button, input, select, textarea {
 
 .masthead {
     text-align: center;
-    padding: 2rem 0 2rem;
+    padding: 1rem 0 2rem;
     border-bottom: 1px solid var(--rule);
     margin-bottom: 1.5rem;
     position: relative;

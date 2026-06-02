@@ -54,7 +54,7 @@
                     <input type="text" id="tags" name="tags" value="{{tagsString}}" placeholder="如：Node.js, Railway, 部署">
                 </div>
                 <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">{{#if post}}保存修改{{else}}发布{{/if}}</button>
+                    <button type="submit" class="btn btn-primary"><span id="submitBtnText">发布</span></button>
                     <a href="/" class="btn">取消</a>
                 </div>
             </form>
@@ -62,5 +62,17 @@
     </main>
 
     {{> footer}}
+    <script>
+    (function() {
+        const statusSelect = document.getElementById('status');
+        const btnText = document.getElementById('submitBtnText');
+        if (!statusSelect || !btnText) return;
+        function updateBtnText() {
+            btnText.textContent = statusSelect.value === 'draft' ? '保存' : '发布';
+        }
+        statusSelect.addEventListener('change', updateBtnText);
+        updateBtnText();
+    })();
+    </script>
 </body>
 </html>

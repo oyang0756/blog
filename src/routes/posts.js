@@ -101,6 +101,12 @@ router.get('/search', optionalAuth, async (req, res) => {
 router.get('/post/:slug', optionalAuth, async (req, res) => {
     const post = await Post.findBySlug(req.params.slug);
     if (!post) return res.status(404).render('404', { user: req.user || null });
+
+    // 草稿仅作者和管理员可见
+    if (post.status === 'draft' && (!req.user || (req.user.id !== post.author_id && req.user.role !== 'admin'))) {
+        return res.status(404).render('404', { user: req.user || null });
+    }
+
     await Post.incrementViewCount(post.id);
     const comments = await Comment.findByPost(post.id);
 
@@ -138,7 +144,7 @@ router.get('/post/:slug', optionalAuth, async (req, res) => {
     });
 });
 
-router.get('/editor', requireAuth, (req, res) => {
+router.get('/editor', requireAdmin, (req, res) => {
     res.render('editor', {
         user: req.user,
         post: null,
@@ -148,7 +154,7 @@ router.get('/editor', requireAuth, (req, res) => {
     });
 });
 
-router.get('/editor/:id', requireAuth, async (req, res) => {
+router.get('/editor/:id', requireAdmin, async (req, res) => {
     const post = await Post.findById(req.params.id);
     if (!post || (post.author_id !== req.user.id && req.user.role !== 'admin')) {
         return res.redirect('/editor');
@@ -164,7 +170,7 @@ router.get('/editor/:id', requireAuth, async (req, res) => {
 });
 
 router.post('/posts',
-    requireAuth,
+    requireAdmin,
     upload.single('image'),
     body('title').trim().isLength({ min: 1, max: 200 }).withMessage('标题不能为空且不超过200字'),
     body('content').trim().isLength({ min: 1 }).withMessage('内容不能为空'),
@@ -194,7 +200,7 @@ router.post('/posts',
 );
 
 router.post('/posts/:id',
-    requireAuth,
+    requireAdmin,
     upload.single('image'),
     body('title').trim().isLength({ min: 1, max: 200 }).withMessage('标题不能为空'),
     body('content').trim().isLength({ min: 1 }).withMessage('内容不能为空'),

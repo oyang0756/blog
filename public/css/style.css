@@ -373,9 +373,9 @@ button, input, select, textarea {
 
 .masthead {
     text-align: center;
-    padding: 2rem 0 2.5rem;
+    padding: 2rem 0 2rem;
     border-bottom: 1px solid var(--rule);
-    margin-bottom: 3rem;
+    margin-bottom: 1.5rem;
     position: relative;
 }
 
@@ -427,7 +427,8 @@ button, input, select, textarea {
     display: flex;
     flex-wrap: wrap;
     gap: 0;
-    margin: 0 0 3rem;
+    width: fit-content;
+    margin: 0 auto 1.5rem;
     border-bottom: 1px solid var(--rule);
     padding: 0;
     justify-content: center;

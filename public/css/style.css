@@ -969,7 +969,6 @@ button, input, select, textarea {
     display: inline-block;
     color: var(--ink-mute);
     font-size: 0.9rem;
-    margin-top: 1.5rem;
     margin-bottom: 1.5rem;
     text-decoration: none;
     transition: color 0.2s ease;

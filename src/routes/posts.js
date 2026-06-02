@@ -53,7 +53,7 @@ function buildPageList(current, totalPages) {
 
 router.get('/', optionalAuth, async (req, res) => {
     const page = parseInt(req.query.page) || 1;
-    const limit = 10;
+    const limit = 8;
     const offset = (page - 1) * limit;
     const category = req.query.category || null;
     const posts = await Post.findAll(limit, offset, category);
@@ -78,7 +78,7 @@ router.get('/search', optionalAuth, async (req, res) => {
         return res.redirect('/');
     }
     const page = parseInt(req.query.page) || 1;
-    const limit = 10;
+    const limit = 8;
     const offset = (page - 1) * limit;
     const category = req.query.category || null;
     const posts = await Post.search(query.trim(), limit, offset, category);

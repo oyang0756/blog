@@ -352,7 +352,7 @@ button, input, select, textarea {
 .main-content {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 3rem 32px 6rem;
+    padding: 1rem 32px 6rem;
     min-height: calc(100vh - 200px);
     animation: fade-in 0.6s ease-out;
 }

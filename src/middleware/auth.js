@@ -20,9 +20,13 @@ const requireAuth = requireRole('admin', 'vip', 'user');
 const requireAdmin = requireRole('admin');
 const requireVip = requireRole('admin', 'vip');
 
-function optionalAuth(req, res, next) {
+async function optionalAuth(req, res, next) {
     if (req.session.userId) {
-        req.user = User.findById(req.session.userId);
+        try {
+            req.user = await User.findById(req.session.userId);
+        } catch (e) {
+            req.user = null;
+        }
     }
     next();
 }

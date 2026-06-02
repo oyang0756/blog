@@ -981,7 +981,8 @@ button, input, select, textarea {
 
 .scroll-top {
     position: fixed;
-    right: max(1rem, calc(50% - 380px + 1.5rem));
+    /* 关键：max-width 760px 居中文章 + 1rem gap + 2.5rem 按钮宽 = 文章右边沿外侧 */
+    right: max(1rem, calc(50% - 380px - 2.5rem - 1rem));
     bottom: 2rem;
     width: 2.5rem;
     height: 2.5rem;

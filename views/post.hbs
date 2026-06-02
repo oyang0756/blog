@@ -15,6 +15,7 @@
 
     <main class="main-content">
         <article class="post-detail">
+            <a href="{{backUrl}}" class="post-back">← {{backLabel}}</a>
             <header class="post-header">
                 {{#if post.category}}
                 <div class="post-taxonomy">
@@ -90,6 +91,7 @@
     </main>
 
     {{> footer}}
+    <button class="scroll-top" id="scrollTopBtn" aria-label="回到顶部">∧</button>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script>
     if (window.hljs) hljs.highlightAll();
@@ -101,6 +103,16 @@
         document.getElementById('comment-content-' + commentId).style.display = 'block';
         document.getElementById('edit-form-' + commentId).style.display = 'none';
     }
+    (function() {
+        const btn = document.getElementById('scrollTopBtn');
+        if (!btn) return;
+        window.addEventListener('scroll', () => {
+            btn.classList.toggle('visible', window.scrollY > 300);
+        }, { passive: true });
+        btn.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    })();
     </script>
 </body>
 </html>

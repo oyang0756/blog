@@ -103,11 +103,38 @@ router.get('/post/:slug', optionalAuth, async (req, res) => {
     if (!post) return res.status(404).render('404', { user: req.user || null });
     await Post.incrementViewCount(post.id);
     const comments = await Comment.findByPost(post.id);
+
+    let backUrl = '/';
+    let backLabel = '返回首页';
+    const referer = req.headers.referer || '';
+    if (referer) {
+        try {
+            const url = new URL(referer);
+            if (url.host === req.get('host')) {
+                const cat = url.searchParams.get('category');
+                if (cat && CATEGORIES.find(c => c.slug === cat)) {
+                    const found = CATEGORIES.find(c => c.slug === cat);
+                    backUrl = `/?category=${found.slug}`;
+                    backLabel = `返回「${found.name}」`;
+                } else if (url.pathname === '/search' || url.searchParams.has('q')) {
+                    const q = url.searchParams.get('q') || '';
+                    backUrl = url.pathname + url.search;
+                    backLabel = q ? `返回搜索「${q}」` : '返回搜索';
+                } else if (url.pathname === '/' && !url.search) {
+                    backUrl = '/';
+                    backLabel = '返回首页';
+                }
+            }
+        } catch (e) { /* 解析失败用默认 */ }
+    }
+
     res.render('post', {
         user: req.user || null,
         post,
         comments,
-        categories: CATEGORIES
+        categories: CATEGORIES,
+        backUrl,
+        backLabel
     });
 });
 

@@ -36,7 +36,7 @@ router.post('/login',
 );
 
 router.post('/register',
-    body('username').trim().isLength({ min: 3, max: 20 }).withMessage('用户名需3-20个字符'),
+    body('username').trim().isLength({ min: 3, max: 12 }).withMessage('用户名需3-12个字符'),
     body('email').isEmail().withMessage('请输入有效邮箱'),
     body('password').isLength({ min: 6 }).withMessage('密码至少6位'),
     body('confirmPassword').custom((value, { req }) => value === req.body.password).withMessage('两次密码不一致'),

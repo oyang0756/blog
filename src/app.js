@@ -22,6 +22,7 @@ async function startApp() {
     handlebars.registerHelper('formatDate', (date) => formatDate(date));
     handlebars.registerHelper('substring', (str, start, end) => str.substring(start, end));
     handlebars.registerHelper('not', (a) => !a);
+    handlebars.registerHelper('and', (...args) => args.every(Boolean));
 
     const app = express();
 

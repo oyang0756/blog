@@ -349,13 +349,20 @@ const Post = {
         return result.rows[0].count;
     },
 
-    async findAllAdmin() {
+    async findAllAdmin({ authorId = null } = {}) {
+        const params = [];
+        let where = '';
+        if (authorId) {
+            params.push(authorId);
+            where = 'WHERE posts.author_id = $1';
+        }
         const result = await pool.query(`
             SELECT posts.*, users.username as author_username
             FROM posts
             JOIN users ON posts.author_id = users.id
+            ${where}
             ORDER BY created_at DESC
-        `);
+        `, params);
         return result.rows;
     },
 

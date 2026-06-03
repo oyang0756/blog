@@ -10,6 +10,9 @@
                 {{#if (eq user.role "admin")}}
                 <a href="/admin">管理</a>
                 {{/if}}
+                {{#if (or (eq user.role "admin") (eq user.role "vip"))}}
+                <a href="/admin/my-posts">我的文章</a>
+                {{/if}}
             {{/if}}
             <form action="/search" method="GET" class="search-form">
                 <input type="text" name="q" placeholder="搜索文章..." title="搜索标题、内容或作者（多词空格分隔=全部命中，不区分大小写）" />

@@ -3,7 +3,7 @@ const path = require('path');
 const multer = require('multer');
 const matter = require('gray-matter');
 const { User, Post, Comment, generateSlug, CATEGORIES } = require('../database');
-const { requireAdmin } = require('../middleware/auth');
+const { requireAdmin, requireVip } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -91,7 +91,12 @@ router.post('/admin/users/:id/delete', requireAdmin, async (req, res) => {
 
 router.get('/admin/posts', requireAdmin, async (req, res) => {
     const posts = await Post.findAllAdmin();
-    res.render('admin/posts', { user: req.user, posts });
+    res.render('admin/posts', { user: req.user, posts, pageTitle: '文章管理' });
+});
+
+router.get('/admin/my-posts', requireVip, async (req, res) => {
+    const posts = await Post.findAllAdmin({ authorId: req.user.id });
+    res.render('admin/posts', { user: req.user, posts, pageTitle: '我的文章' });
 });
 
 router.post('/admin/posts/:id/delete', requireAdmin, async (req, res) => {

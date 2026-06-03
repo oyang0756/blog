@@ -321,6 +321,28 @@ const Post = {
         }));
     },
 
+    async countSearch(query, category = null) {
+        const escaped = query.replace(/[\\%_]/g, '\\$&');
+        const pattern = `%${escaped}%`;
+        const params = [pattern];
+        let categoryFilter = '';
+        if (category) {
+            categoryFilter = 'AND posts.category = $2';
+            params.push(category);
+        }
+        const result = await pool.query(`
+            SELECT COUNT(*)::int as count
+            FROM posts
+            JOIN users ON posts.author_id = users.id
+            WHERE status = 'published'
+            AND (title ILIKE $1 ESCAPE '\\'
+                 OR content ILIKE $1 ESCAPE '\\'
+                 OR users.username ILIKE $1 ESCAPE '\\')
+            ${categoryFilter}
+        `, params);
+        return result.rows[0].count;
+    },
+
     async findAllAdmin() {
         const result = await pool.query(`
             SELECT posts.*, users.username as author_username

@@ -82,7 +82,7 @@ router.get('/search', optionalAuth, async (req, res) => {
     const offset = (page - 1) * limit;
     const category = req.query.category || null;
     const posts = await Post.search(query.trim(), limit, offset, category);
-    const total = posts.length;
+    const total = await Post.countSearch(query.trim(), category);
     const totalPages = Math.max(1, Math.ceil(total / limit));
     const pageList = buildPageList(page, totalPages);
 

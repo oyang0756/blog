@@ -98,34 +98,6 @@ router.get('/search', optionalAuth, async (req, res) => {
     });
 });
 
-router.get('/tag/:slug', optionalAuth, async (req, res) => {
-    const tag = await Post.getTagBySlug(req.params.slug);
-    if (!tag) return res.status(404).render('404', { user: req.user || null });
-
-    const page = parseInt(req.query.page) || 1;
-    const limit = 8;
-    const offset = (page - 1) * limit;
-
-    const [posts, total] = await Promise.all([
-        Post.findByTag(req.params.slug, limit, offset),
-        Post.countByTag(req.params.slug)
-    ]);
-    const totalPages = Math.max(1, Math.ceil(total / limit));
-    const pageList = buildPageList(page, totalPages);
-
-    res.render('index', {
-        user: req.user || null,
-        posts,
-        total,
-        tagName: tag.name,
-        categories: CATEGORIES,
-        activeCategory: null,
-        activeTag: tag.slug,
-        pagination: { page, totalPages, hasPrev: page > 1, hasNext: page < totalPages },
-        pageList
-    });
-});
-
 router.get('/post/:slug', optionalAuth, async (req, res) => {
     const post = await Post.findBySlug(req.params.slug);
     if (!post) return res.status(404).render('404', { user: req.user || null });

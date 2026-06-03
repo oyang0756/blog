@@ -21,7 +21,7 @@
 
         {{#if categories}}
         <nav class="category-bar">
-            <a href="/" class="category-tab {{#if (and (not activeCategory) (not activeTag))}}active{{/if}}">全部</a>
+            <a href="/" class="category-tab {{#unless activeCategory}}active{{/unless}}">全部</a>
             {{#each categories}}
             <a href="/?category={{slug}}" class="category-tab {{#if (eq ../activeCategory slug)}}active{{/if}}">{{name}}</a>
             {{/each}}
@@ -33,8 +33,6 @@
                 <span>
                     {{#if activeCategory}}
                         {{#each categories}}{{#if (eq ../activeCategory slug)}}{{name}}{{/if}}{{/each}} · 分类
-                    {{else if activeTag}}
-                        标签「{{tagName}}」
                     {{else if searchQuery}}
                         搜索「{{searchQuery}}」
                     {{else}}
@@ -53,7 +51,7 @@
                             {{#if tags.length}}
                             <div class="post-tags">
                                 {{#each tags}}
-                                <a href="/tag/{{slug}}" class="tag-pill">{{name}}</a>
+                                <span class="tag-pill">{{name}}</span>
                                 {{/each}}
                             </div>
                             {{/if}}

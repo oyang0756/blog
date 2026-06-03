@@ -370,40 +370,6 @@ const Post = {
         return result.rows;
     },
 
-    async getTagBySlug(slug) {
-        const result = await pool.query(`SELECT * FROM tags WHERE slug = $1`, [slug]);
-        return result.rows[0] || null;
-    },
-
-    async findByTag(tagSlug, limit = 20, offset = 0) {
-        const result = await pool.query(`
-            SELECT posts.*, users.username as author_username
-            FROM posts
-            JOIN users ON posts.author_id = users.id
-            JOIN post_tags ON posts.id = post_tags.post_id
-            JOIN tags ON post_tags.tag_id = tags.id
-            WHERE tags.slug = $1 AND posts.status = 'published'
-            ORDER BY posts.created_at DESC
-            LIMIT $2 OFFSET $3
-        `, [tagSlug, limit, offset]);
-        return await Promise.all(result.rows.map(async post => {
-            post.html = renderMarkdown(post.content);
-            post.tags = await this.getTags(post.id);
-            return post;
-        }));
-    },
-
-    async countByTag(tagSlug) {
-        const result = await pool.query(`
-            SELECT COUNT(*)::int as count
-            FROM posts
-            JOIN post_tags ON posts.id = post_tags.post_id
-            JOIN tags ON post_tags.tag_id = tags.id
-            WHERE tags.slug = $1 AND posts.status = 'published'
-        `, [tagSlug]);
-        return result.rows[0].count;
-    },
-
     async setTags(postId, tagNames) {
         await pool.query('DELETE FROM post_tags WHERE post_id = $1', [postId]);
         if (!tagNames || tagNames.length === 0) return;

@@ -294,12 +294,17 @@ const Post = {
     },
 
     async search(query, limit = 20, offset = 0, category = null) {
-        const escaped = query.replace(/[\\%_]/g, '\\$&');
-        const pattern = `%${escaped}%`;
-        const params = [pattern, limit, offset];
+        const terms = query.split(/\s+/).filter(t => t.length > 0);
+        if (terms.length === 0) return [];
+        const patterns = terms.map(t => `%${t.replace(/[\\%_]/g, '\\$&')}%`);
+        const whereClauses = patterns.map((_, i) => {
+            const p = `$${i + 1}`;
+            return `(title ILIKE ${p} ESCAPE '\\' OR content ILIKE ${p} ESCAPE '\\' OR users.username ILIKE ${p} ESCAPE '\\')`;
+        }).join(' AND ');
+        const params = [...patterns, limit, offset];
         let categoryFilter = '';
         if (category) {
-            categoryFilter = 'AND posts.category = $4';
+            categoryFilter = `AND posts.category = $${params.length + 1}`;
             params.push(category);
         }
         const result = await pool.query(`
@@ -307,12 +312,10 @@ const Post = {
             FROM posts
             JOIN users ON posts.author_id = users.id
             WHERE status = 'published'
-            AND (title ILIKE $1 ESCAPE '\\'
-                 OR content ILIKE $1 ESCAPE '\\'
-                 OR users.username ILIKE $1 ESCAPE '\\')
+            AND ${whereClauses}
             ${categoryFilter}
             ORDER BY created_at DESC
-            LIMIT $2 OFFSET $3
+            LIMIT $${patterns.length + 1} OFFSET $${patterns.length + 2}
         `, params);
         return await Promise.all(result.rows.map(async post => {
             post.html = renderMarkdown(post.content);
@@ -322,12 +325,17 @@ const Post = {
     },
 
     async countSearch(query, category = null) {
-        const escaped = query.replace(/[\\%_]/g, '\\$&');
-        const pattern = `%${escaped}%`;
-        const params = [pattern];
+        const terms = query.split(/\s+/).filter(t => t.length > 0);
+        if (terms.length === 0) return 0;
+        const patterns = terms.map(t => `%${t.replace(/[\\%_]/g, '\\$&')}%`);
+        const whereClauses = patterns.map((_, i) => {
+            const p = `$${i + 1}`;
+            return `(title ILIKE ${p} ESCAPE '\\' OR content ILIKE ${p} ESCAPE '\\' OR users.username ILIKE ${p} ESCAPE '\\')`;
+        }).join(' AND ');
+        const params = [...patterns];
         let categoryFilter = '';
         if (category) {
-            categoryFilter = 'AND posts.category = $2';
+            categoryFilter = `AND posts.category = $${params.length + 1}`;
             params.push(category);
         }
         const result = await pool.query(`
@@ -335,9 +343,7 @@ const Post = {
             FROM posts
             JOIN users ON posts.author_id = users.id
             WHERE status = 'published'
-            AND (title ILIKE $1 ESCAPE '\\'
-                 OR content ILIKE $1 ESCAPE '\\'
-                 OR users.username ILIKE $1 ESCAPE '\\')
+            AND ${whereClauses}
             ${categoryFilter}
         `, params);
         return result.rows[0].count;

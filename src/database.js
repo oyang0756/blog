@@ -294,7 +294,9 @@ const Post = {
     },
 
     async search(query, limit = 20, offset = 0, category = null) {
-        const params = [`%${query}%`, limit, offset];
+        const escaped = query.replace(/[\\%_]/g, '\\$&');
+        const pattern = `%${escaped}%`;
+        const params = [pattern, limit, offset];
         let categoryFilter = '';
         if (category) {
             categoryFilter = 'AND posts.category = $4';
@@ -305,7 +307,9 @@ const Post = {
             FROM posts
             JOIN users ON posts.author_id = users.id
             WHERE status = 'published'
-            AND (title LIKE $1 OR content LIKE $1)
+            AND (title ILIKE $1 ESCAPE '\\'
+                 OR content ILIKE $1 ESCAPE '\\'
+                 OR users.username ILIKE $1 ESCAPE '\\')
             ${categoryFilter}
             ORDER BY created_at DESC
             LIMIT $2 OFFSET $3

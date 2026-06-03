@@ -91,12 +91,13 @@ router.post('/admin/users/:id/delete', requireAdmin, async (req, res) => {
 
 router.get('/admin/posts', requireAdmin, async (req, res) => {
     const posts = await Post.findAllAdmin();
-    res.render('admin/posts', { user: req.user, posts, pageTitle: '文章管理' });
+    res.render('admin/posts', { user: req.user, posts, pageTitle: '文章管理', backUrl: '/admin', backText: '返回后台' });
 });
 
 router.get('/admin/my-posts', requireVip, async (req, res) => {
     const posts = await Post.findAllAdmin({ authorId: req.user.id });
-    res.render('admin/posts', { user: req.user, posts, pageTitle: '我的文章' });
+    const backUrl = req.user.role === 'admin' ? '/admin' : '/';
+    res.render('admin/posts', { user: req.user, posts, pageTitle: '我的文章', backUrl, backText: '返回' });
 });
 
 router.post('/admin/posts/:id/delete', requireAdmin, async (req, res) => {

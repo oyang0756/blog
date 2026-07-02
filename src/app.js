@@ -29,6 +29,8 @@ async function startApp() {
     app.set('view engine', 'hbs');
     app.set('views', path.join(__dirname, '..', 'views'));
 
+    app.get('/healthz', (_req, res) => res.status(200).send('ok'));
+
     // 注册 partials
     const partialsDir = path.join(__dirname, '..', 'views', 'partials');
     fs.readdirSync(partialsDir).forEach(file => {
